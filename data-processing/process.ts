@@ -1,49 +1,74 @@
-import { XMLParser } from "fast-xml-parser";
+import { LineVariant, Stops } from "./stops.ts";
+import {
+  flattenTimetableForDay,
+  getKierunek,
+  getWariants,
+  RozkladParser,
+  Wariant,
+} from "./parse.ts";
+const stops: Stops = new Stops();
 
 async function entryPoint() {
-  const xmlParser = new XMLParser();
-  const decoder = new TextDecoder(); // Decode bytes to text
-
+  const parser = new RozkladParser();
   if (!Deno.args[0]) {
-    console.error("Error: No path provided.");
+    console.error("Error: No input path provided.");
+    Deno.exit(1);
+  }
+  if (!Deno.args[1]) {
+    console.error("Error: No output path provided.");
     Deno.exit(1);
   }
 
   const path = Deno.args[0];
+  const outPath = Deno.args[1];
   try {
-    const output: string[] = [];
     const f = await traverseInputFolders(path);
     if (f.length === 0) {
       console.warn("Warning: No XML files found.");
     }
 
-    f.map((it) => Deno.open(it))
-      .map(async (it) => {
-        const i = await it;
-        const buf = new Uint8Array(100000);
-        await i.read(buf);
-        i.close();
-        const parsed = xmlParser.parse(decoder.decode(buf));
+    const s = f.map((it) => {
+      return parser.parseRozklad(it);
+    })
+      .map(async (rozkladPr) => {
+        const rozklad = await rozkladPr;
 
-        console.log(parsed["linie"]["linia"]);
+        return getWariants(rozklad.linie.linia).map((wariant) => {
+          const lineWithVariant: [string, Date, Wariant] = [
+            rozklad.linie.linia["@nazwa"],
+            parseDate(rozklad.linie.linia["@wazny_od"]),
+            wariant,
+          ];
+          return lineWithVariant;
+        });
       });
-    //await Promise.all(f.map(async (file) => {
-    //  console.log(file);
-    //  const fileHandle = await Deno.open(file, { read: true }); // Open file in read mode
-    //  const decoder = new TextDecoder(); // Decode bytes to text
-    //  const buf = new Uint8Array(1000);
-    //  // Read file content
-    //  await (fileHandle.read(buf));
-    //  fileHandle.close(); // Always close the file
-    //
-    //  // Convert buffer to string
-    //  const xmlString = decoder.decode(buf);
-    //
-    //  // Parse XML
-    //  const parsed = xmlParser.parse(xmlString);
-    //
-    //  console.log(parsed, xmlString);
-    //}));
+
+    Promise.all(s).then((it) => {
+      it.flat().flatMap(([name, validFrom, variant]) => {
+        variant.przystanek.forEach((przystanek) => {
+          console.log(przystanek["@nazwa"], name, variant["@id"]);
+          const lineVariant: LineVariant = {
+            name: name,
+            destination: getKierunek(variant),
+            variant: przystanek["@id"] == 1 ? 1 : 2,
+            validFrom: validFrom,
+            variantDescription: variant["@nazwa"],
+            weekdayTT: flattenTimetableForDay(
+              "w dni robocze",
+              przystanek.tabliczka,
+            ),
+            saturdayTT: flattenTimetableForDay("Sobota", przystanek.tabliczka),
+            sundayTT: flattenTimetableForDay("Niedziela", przystanek.tabliczka),
+          };
+          stops.putOrAppend(
+            przystanek["@id"],
+            przystanek["@nazwa"],
+            lineVariant,
+          );
+        });
+      });
+      Deno.writeTextFileSync(outPath, JSON.stringify(stops));
+    });
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       console.error(`Error: Failed to read dir ectory "${path}".`);
@@ -51,6 +76,11 @@ async function entryPoint() {
     }
     Deno.exit(1);
   }
+}
+
+function parseDate(dateString: string) {
+  const [day, month, year] = dateString.split(".").map(Number);
+  return new Date(year, month - 1, day); // Month is 0-based in JS
 }
 
 async function traverseInputFolders(
