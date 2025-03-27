@@ -1,70 +1,64 @@
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Bus Stops</title>
 
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="color-scheme" content="light dark">
-	<title>Bus Stops</title>
+    <!-- PicoCSS for styling -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
 
-	<!-- PicoCSS for styling -->
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <!-- Alpine.js -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+  </head>
 
-	<!-- Alpine.js -->
-	<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
+  <body>
+    <main class="container">
+      <div
+        x-data="{ time: new Date().toLocaleTimeString('en-GB', { hour12: false }) }"
+        x-init="setInterval(() => time = new Date().toLocaleTimeString('en-GB', { hour12: false }), 1000)"
+      >
+        <h1 x-text="time"></h1>
+      </div>
 
-<body>
-	<main class="container">
-		<h1>Bus Stops</h1>
+      <!-- Alpine.js Component -->
+      <div x-data="stopsData" x-init="loadStops">
+        <!--<button @click="loadStops">Load Stops</button>-->
 
-		<!-- Alpine.js Component -->
-		<div x-data="stopsData">
-			<button @click="loadStops">Load Stops</button>
-
-			<!-- Display stops -->
-			<ul>
-				<template x-for="stop in stopsArray" :key="stop.id">
-
-					<li>
-						<strong x-text="stop.name"></strong> (ID: <span x-text="stop.id"></span>)
-						<ul style="margin-left: 20px; list-style-type: none; padding-left: 10px;">
-							<template x-for="line in stop.lines" :key="line.name + line.destination">
-								<li>
-									<span x-text="line.name"></span> →
-									<span x-text="line.destination"></span>
-								</li>
-							</template>
-						</ul>
-					</li>
-				</template>
-			</ul>
-		</div>
-	</main>
-
-	<script>
-		document.addEventListener("alpine:init", () => {
-			Alpine.data("stopsData", () => ({
-				stops: [],
-				stopsArray: [], // Array for displaying in UI
-
-				async loadStops() {
-					try {
-						<!--const response = await fetch("https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json")-->
-						const response = await fetch("https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json")
-						const data = await response.json();
-
-						this.stops = data;
-
-
-						this.stopsArray = Object.values(data.stops); // Convert map to array
-
-					} catch (error) {
-						console.error("Error loading stops:", error);
-					}
-				}
-			}));
-		});
-	</script>
-</body>
-
+        <!-- Display stops -->
+        <ul>
+          <template x-for="stop in stopsArray" :key="stop.id">
+            <li>
+              <strong x-text="stop.name"></strong> (ID:
+              <span x-text="stop.id"></span>)
+              <ul
+                style="
+                  margin-left: 20px;
+                  list-style-type: none;
+                  padding-left: 10px;
+                "
+              >
+                <template
+                  x-for="line in stop.lines"
+                  :key="line.name + line.variant + stop.id"
+                >
+                  <li>
+                    <span x-text="line.name"></span> →
+                    <span x-text="line.destination"></span>
+                  </li>
+                </template>
+              </ul>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </main>
+    <script src="app.js"></script>
+  </body>
 </html>
