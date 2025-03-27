@@ -6,12 +6,12 @@ document.addEventListener("alpine:init", () => {
     async loadStops() {
       try {
         // Replace with the actual proxy URL if needed
-        const response = await fetch(
-          "https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
-        );
         //const response = await fetch(
-        //  "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
+        //  "https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
         //);
+        const response = await fetch(
+          "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
+        );
         const data = await response.json();
 
         this.stops = data;
