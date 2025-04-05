@@ -5,13 +5,10 @@
     <meta name="color-scheme" content="light dark" />
     <title>Bus Stops</title>
 
-    <!-- PicoCSS for styling -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
     />
-
-    <!-- Alpine.js -->
     <script
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
@@ -20,17 +17,12 @@
 
   <body>
     <main class="container">
-      <div
-        x-data="{ time: new Date().toLocaleTimeString('en-GB', { hour12: false }) }"
-        x-init="setInterval(() => time = new Date().toLocaleTimeString('en-GB', { hour12: false }), 1000)"
-      >
-        <h1 x-text="time"></h1>
+      <div x-data="$store.clock">
+        <h1 x-text="now.toLocaleTimeString('en-GB', { hour12: false }) "></h1>
       </div>
 
       <!-- Alpine.js Component -->
-      <div x-data="stopsData" x-init="loadStops">
-        <!--<button @click="loadStops">Load Stops</button>-->
-
+      <div x-data="stopsData">
         <!-- Display stops -->
         <ul>
           <template x-for="stop in stopsArray" :key="stop.id">
@@ -45,12 +37,15 @@
                 "
               >
                 <template
-                  x-for="line in stop.lines"
-                  :key="line.name + line.variant + stop.id"
+                  x-for="arrival in nextArrivals[stop.id]"
+                  :key="arrival.timestamp + arrival.name"
                 >
                   <li>
-                    <span x-text="line.name"></span> →
-                    <span x-text="line.destination"></span>
+                    <strong> <span x-text="arrival.line"> </span></strong>
+                    <span
+                      style="float: right"
+                      x-text="arrival.hourAndMin"
+                    ></span>
                   </li>
                 </template>
               </ul>
