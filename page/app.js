@@ -166,7 +166,7 @@ document.addEventListener("alpine:init", () => {
         //  "https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
         //);
         const response = await fetch(
-          "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.1/out.json",
+          "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/latest/download/out.json",
         );
         const data = await response.json();
 
