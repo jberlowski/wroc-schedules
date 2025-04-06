@@ -1,5 +1,4 @@
 document.addEventListener("alpine:init", () => {
-  // Global shared clock store
   Alpine.store("clock", {
     now: new Date(),
 
@@ -37,7 +36,7 @@ document.addEventListener("alpine:init", () => {
     stops: [],
     stopsArray: [],
     nextArrivals: {},
-
+    playDate: new Date(),
     init() {
       this.loadStops();
       const msUntilNextMinute =
@@ -51,18 +50,16 @@ document.addEventListener("alpine:init", () => {
     },
 
     buildNextArrivals() {
-      console.log("reload", Date.now());
       const since = Date.now() - 1000 * 60 * 3;
       this.stopsArray.forEach((stop) => {
+        console.log("start", stop.name);
         this.nextArrivals[stop.id] = [];
-        console.log(this.weekdayType);
         stop.lines.forEach((line) => {
           //console.log();
 
           //console.log(this.getTimetableForDayType(line));
           const timetable = this.getTimetableForDayType(line);
 
-          console.log(line.name, this.getNearestXArrivals(timetable, since, 2));
           const nextArrivals = this.getNearestXArrivals(
             timetable,
             since,
@@ -79,8 +76,21 @@ document.addEventListener("alpine:init", () => {
             ...nextArrivals,
           ].sort((a, b) => a.timestamp - b.timestamp);
         });
+        console.log("done", stop.name);
       });
-      console.log(this.nextArrivals);
+    },
+
+    calculateMinutesDifference(date) {
+      const diffMs = date - Alpine.store("clock").now;
+      const diffMinutes = diffMs / (1000 * 60);
+      return Math.round(diffMinutes);
+    },
+
+    getColor(minutes) {
+      if (minutes <= 0) return "red";
+      if (minutes === 1) return "orange";
+      if (minutes <= 4) return "yellow";
+      return "";
     },
 
     getTimetableForDayType(line) {
@@ -102,9 +112,9 @@ document.addEventListener("alpine:init", () => {
     },
 
     getNearestXArrivals(timetable, since, n) {
-      const date = new Date();
+      const date = this.playDate;
       return timetable.reduce((acc, hourAndMinute) => {
-        if (acc.length >= n) return acc; // Stop if we've collected 'n' elements
+        if (acc.length >= n) return acc;
         const [hours, minutes] = hourAndMinute.split(":").map(Number);
         date.setHours(hours, minutes);
         if (date > since) {
@@ -112,6 +122,36 @@ document.addEventListener("alpine:init", () => {
         }
         return acc;
       }, []);
+    },
+
+    getLabelForStop(id) {
+      switch (id) {
+        case "10407":
+          return "🚊 -> Legnicka";
+
+        case "12217":
+          return "🚊 → Kozanów";
+        case "12218":
+          return "🚊 → Centrum";
+        case "12601":
+          return "🚊 → Górnicza/T. Arena";
+        case "12602":
+          return "🚊 → Port Popo/Legnicka";
+        case "12313":
+          return "🚌 (od strony Port Popo)";
+        case "12314":
+          return "🚌 (przy Biedronce)";
+        case "12701":
+          return "🚌 (przy Tramwajach) -> Leśnica";
+        case "12702":
+          return "🚌 (przy Parku) -> PL. JP II";
+        case "12711":
+          return "🚌 (przy Kościele) -> Kozia/Kozanów";
+        case "12712":
+          return "🚌 (przy Kościele) -> PL. JP II";
+        default:
+          return "";
+      }
     },
 
     get weekdayType() {
@@ -132,11 +172,26 @@ document.addEventListener("alpine:init", () => {
         const data = await response.json();
 
         this.stops = data;
-        this.stopsArray = Object.values(data.stops).filter((stop) => {
-          return ["12701", "12702", "12217", "12218", "10407"].includes(
-            stop.id,
-          );
-        });
+        this.stopsArray = Object.values(data.stops)
+          .filter((stop) => {
+            return [
+              //"12701",
+              "12702",
+              "12217",
+              "12218",
+              "12313",
+              "12314",
+              "10407",
+              //"12601",
+              "12602",
+              "12711",
+              "12712",
+            ].includes(stop.id);
+          })
+          .map((stop) => {
+            stop.label = this.getLabelForStop(stop.id);
+            return stop;
+          });
         this.buildNextArrivals();
       } catch (error) {
         console.error("Error loading stops:", error);

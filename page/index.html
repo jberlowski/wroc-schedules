@@ -21,37 +21,38 @@
         <h1 x-text="now.toLocaleTimeString('en-GB', { hour12: false }) "></h1>
       </div>
 
-      <!-- Alpine.js Component -->
       <div x-data="stopsData">
-        <!-- Display stops -->
-        <ul>
-          <template x-for="stop in stopsArray" :key="stop.id">
-            <li>
-              <strong x-text="stop.name"></strong> (ID:
-              <span x-text="stop.id"></span>)
-              <ul
-                style="
-                  margin-left: 20px;
-                  list-style-type: none;
-                  padding-left: 10px;
-                "
+        <template x-for="stop in stopsArray" :key="stop.id">
+          <details name="exclusive-accordion">
+            <summary
+              x-text="stop.name + ' ' +  stop.label + ' (ID:' + stop.id + ')'"
+            ></summary>
+            <ul>
+              <template
+                x-for="arrival in nextArrivals[stop.id]"
+                :key="index + arrival.timestamp + arrival.name"
               >
-                <template
-                  x-for="arrival in nextArrivals[stop.id]"
-                  :key="arrival.timestamp + arrival.name"
+                <li
+                  :style="{
+                   color: getColor(calculateMinutesDifference(arrival.timestamp)),
+                   'list-style-type': 'none'
+                  }"
                 >
-                  <li>
-                    <strong> <span x-text="arrival.line"> </span></strong>
-                    <span
-                      style="float: right"
-                      x-text="arrival.hourAndMin"
-                    ></span>
-                  </li>
-                </template>
-              </ul>
-            </li>
-          </template>
-        </ul>
+                  <strong> <span x-text="arrival.line"> </span></strong>
+                  <span
+                    style="float: right; margin-left: 1em"
+                    x-text="arrival.hourAndMin"
+                  ></span>
+
+                  <span
+                    style="float: right"
+                    x-text="calculateMinutesDifference(arrival.timestamp) + ' min'"
+                  ></span>
+                </li>
+              </template>
+            </ul>
+          </details>
+        </template>
       </div>
     </main>
     <script src="app.js"></script>
