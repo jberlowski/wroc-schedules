@@ -24,9 +24,11 @@
       <div x-data="stopsData">
         <template x-for="stop in stopsArray" :key="stop.id">
           <details name="exclusive-accordion">
-            <summary
-              x-text="stop.name + ' ' +  stop.label + ' (ID:' + stop.id + ')'"
-            ></summary>
+            <summary>
+              <strong><span x-text="stop.name"</span></strong>
+              <sub style="display: block; margin-top: 10px;">
+              <span x-text="stop.label"></span></sub>
+           </summary>
             <ul>
               <template
                 x-for="arrival in nextArrivals[stop.id]"

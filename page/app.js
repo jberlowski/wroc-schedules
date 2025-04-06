@@ -88,8 +88,8 @@ document.addEventListener("alpine:init", () => {
 
     getColor(minutes) {
       if (minutes <= 0) return "red";
-      if (minutes === 1) return "orange";
-      if (minutes <= 4) return "yellow";
+      if (minutes === 1) return "#942D0D";
+      if (minutes <= 4) return "#F56B3D";
       return "";
     },
 
@@ -128,7 +128,6 @@ document.addEventListener("alpine:init", () => {
       switch (id) {
         case "10407":
           return "🚊 -> Legnicka";
-
         case "12217":
           return "🚊 → Kozanów";
         case "12218":
