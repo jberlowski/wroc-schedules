@@ -100,7 +100,7 @@ document.addEventListener("alpine:init", () => {
         case "saturday":
           return line.saturdayTT;
         default:
-          return line.workday;
+          return line.workdayTT;
       }
     },
 
