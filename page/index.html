@@ -13,6 +13,8 @@
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
+
+    <script src="app.js"></script>
   </head>
 
   <body>
@@ -26,7 +28,7 @@
           <details name="exclusive-accordion">
             <summary>
               <strong><span x-text="stop.name"</span></strong>
-              <sub style="display: block; margin-top: 10px;">
+              <sub style="display: block; margin-top: 0.4em;">
               <span x-text="stop.label"></span></sub>
            </summary>
             <ul>
@@ -57,6 +59,5 @@
         </template>
       </div>
     </main>
-    <script src="app.js"></script>
   </body>
 </html>
