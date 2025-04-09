@@ -7,6 +7,11 @@ serve(async (req) => {
   const apiRes = await fetch(api);
   const data = await apiRes.json();
   return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json" },
+     headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*", // 👈 Allow CORS from anywhere
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
   });
 });
