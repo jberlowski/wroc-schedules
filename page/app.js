@@ -37,6 +37,15 @@ document.addEventListener("alpine:init", () => {
     nextArrivals: {},
     playDate: new Date(),
     init() {
+      //51.132882, 16.972938
+      const map = L.map("map").setView([51.132882, 16.972938], 15);
+
+      // Add a tile layer (OpenStreetMap in this case)
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      this.getPositionOfVehicles("10");
       this.loadStops();
       const msUntilNextMinute =
         60000 - (new Date().getSeconds() * 1000 + new Date().getMilliseconds());
@@ -51,12 +60,8 @@ document.addEventListener("alpine:init", () => {
     buildNextArrivals() {
       const since = Date.now() - 1000 * 60 * 3;
       this.stopsArray.forEach((stop) => {
-        console.log("start", stop.name);
         this.nextArrivals[stop.id] = [];
         stop.lines.forEach((line) => {
-          //console.log();
-
-          //console.log(this.getTimetableForDayType(line));
           const timetable = this.getTimetableForDayType(line);
 
           const nextArrivals = this.getNearestXArrivals(
@@ -76,8 +81,27 @@ document.addEventListener("alpine:init", () => {
             ...nextArrivals,
           ].sort((a, b) => a.timestamp - b.timestamp);
         });
-        console.log("done", stop.name);
       });
+    },
+
+    getPositionOfVehicles(line) {
+      const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
+      const filters = JSON.stringify({ Nazwa_Linii: line });
+
+      const url = new URL(
+        "https://corsproxy.io/?url=https://www.wroclaw.pl/open-data/api/3/action/datastore_search",
+      );
+      url.searchParams.set("resource_id", resourceId);
+      url.searchParams.set("filters", filters);
+
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Results:", data.result.records);
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
     },
 
     calculateMinutesDifference(date) {
@@ -172,7 +196,6 @@ document.addEventListener("alpine:init", () => {
         const compressed = await response.arrayBuffer();
         const data = await unzip(compressed);
         //const data = await response.json();
-        console.log(data[0]);
         const text = new TextDecoder("utf-8").decode(data[0].buffer);
         const json = JSON.parse(text);
 

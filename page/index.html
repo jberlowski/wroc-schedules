@@ -9,28 +9,50 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
-
-    <script src="app.js"></script>
   </head>
 
   <body>
+    <script src="app.js"></script>
+
     <main class="container">
       <div x-data="$store.clock">
         <h1 x-text="now.toLocaleTimeString('en-GB', { hour12: false }) "></h1>
       </div>
+      <style>
+              [role=button],button,input[type=button],input[type=reset],input[type=submit]{
+            --background-color:none;
+            --border-color:none;
+        padding: 0px 0px;;
+      </style>
+      <div style="height: 400px" id="map"></div>
 
+      <script>
+        // Initialize the map when the DOM content is loaded
+      </script>
       <div x-data="stopsData">
         <template x-for="stop in stopsArray" :key="stop.id">
           <details name="exclusive-accordion">
             <summary>
-              <strong><span x-text="stop.name"</span></strong>
-              <sub style="display: block; margin-top: 0.4em;">
-              <span x-text="stop.label"></span></sub>
-           </summary>
+              <strong><span x-text="stop.name"></span></strong>
+              <sub style="display: block; margin-top: 0.4em">
+                <span x-text="stop.label"></span
+              ></sub>
+            </summary>
             <ul>
               <template
                 x-for="arrival in nextArrivals[stop.id]"
