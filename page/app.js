@@ -36,16 +36,44 @@ document.addEventListener("alpine:init", () => {
     stopsArray: [],
     nextArrivals: {},
     playDate: new Date(),
+    map: undefined,
     init() {
-      //51.132882, 16.972938
-      const map = L.map("map").setView([51.132882, 16.972938], 15);
+      const wrapper = document.getElementById("map-wrapper");
+      const shadowRoot = wrapper.attachShadow({ mode: "open" });
 
-      // Add a tile layer (OpenStreetMap in this case)
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
-      this.getPositionOfVehicles("10");
+      const mapContainer = document.createElement("div");
+      mapContainer.id = "map";
+      mapContainer.style.height = "300px";
+
+      const leafletCSS = document.createElement("link");
+      leafletCSS.rel = "stylesheet";
+      leafletCSS.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      const leafletJS = document.createElement("script");
+      leafletJS.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      leafletJS.crossOrigin = "";
+      shadowRoot.appendChild(leafletCSS);
+      shadowRoot.appendChild(leafletJS);
+      shadowRoot.appendChild(mapContainer);
+
+      setTimeout(() => {
+        L.Icon.Default.mergeOptions({
+          iconUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+          iconRetinaUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+          shadowUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        });
+        this.map = L.map(mapContainer).setView([51.132882, 16.972938], 15);
+
+        // Add a tile layer (OpenStreetMap in this case)
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(this.map);
+        L.marker([51.132882, 16.972938]).addTo(this.map);
+        this.getPositionOfVehicles("10");
+      }, 100);
       this.loadStops();
       const msUntilNextMinute =
         60000 - (new Date().getSeconds() * 1000 + new Date().getMilliseconds());
@@ -88,9 +116,7 @@ document.addEventListener("alpine:init", () => {
       const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
       const filters = JSON.stringify({ Nazwa_Linii: line });
 
-      const url = new URL(
-        "https://corsproxy.io/?url=https://www.wroclaw.pl/open-data/api/3/action/datastore_search",
-      );
+      const url = new URL("https://wroschedule.deno.dev");
       url.searchParams.set("resource_id", resourceId);
       url.searchParams.set("filters", filters);
 
@@ -98,6 +124,21 @@ document.addEventListener("alpine:init", () => {
         .then((response) => response.json())
         .then((data) => {
           console.log("Results:", data.result.records);
+          data.result.records.forEach((res) => {
+            L.circleMarker(
+              [
+                res["Ostatnia_Pozycja_Szerokosc"],
+                res["Ostatnia_Pozycja_Dlugosc"],
+              ],
+              {
+                radius: 15,
+                color: "#ff0000", // stroke color
+                weight: 2, // stroke width
+                fillColor: "#ff0000", // fill color
+                fillOpacity: 0.6, // fill opacity (0 = transparent, 1 = opaque)
+              },
+            ).addTo(this.map);
+          });
         })
         .catch((error) => {
           console.error("Error fetching data:", error);
@@ -151,7 +192,7 @@ document.addEventListener("alpine:init", () => {
     getLabelForStop(id) {
       switch (id) {
         case "10407":
-          return "🚊 -> Legnicka";
+          return "🚊 → Legnicka";
         case "12217":
           return "🚊 → Kozanów";
         case "12218":
