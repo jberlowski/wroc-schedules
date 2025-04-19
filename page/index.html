@@ -9,33 +9,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
     />
-    <!--<style>-->
-    <!--  .leaflet-isolated * {-->
-    <!--    all: unset;-->
-    <!--    all: revert; /* If supported — better for re-enabling browser defaults */-->
-    <!--    box-sizing: content-box;-->
-    <!--  }-->
-    <!---->
-    <!--  .leaflet-isolated img {-->
-    <!--    max-width: none;-->
-    <!--  }-->
-    <!---->
-    <!--  #map {-->
-    <!--    height: 300px;-->
-    <!--  }-->
-    <!--</style>-->
-    <!--<link-->
-    <!--  rel="stylesheet"-->
-    <!--  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"-->
-    <!--  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="-->
-    <!--  crossorigin=""-->
-    <!--/>-->
-
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
     <script
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
@@ -49,8 +22,6 @@
       <div x-data="$store.clock">
         <h1 x-text="now.toLocaleTimeString('en-GB', { hour12: false }) "></h1>
       </div>
-
-      <div id="map-wrapper"></div>
 
       <div x-data="stopsData">
         <template x-for="stop in stopsArray" :key="stop.id">
@@ -88,6 +59,7 @@
           </details>
         </template>
       </div>
+      <div x-data="mapHandler" id="map-wrapper"></div>
     </main>
   </body>
 </html>

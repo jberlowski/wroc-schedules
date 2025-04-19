@@ -28,15 +28,13 @@ document.addEventListener("alpine:init", () => {
     },
   });
 
-  // Start the clock when Alpine loads
   Alpine.store("clock").init();
 
-  // Stops data component
-  Alpine.data("stopsData", () => ({
-    stopsArray: [],
-    nextArrivals: {},
-    playDate: new Date(),
+  Alpine.data("mapHandler", () => ({
     map: undefined,
+    selectedLine: undefined,
+    selectedStop: undefined,
+
     init() {
       const wrapper = document.getElementById("map-wrapper");
       const shadowRoot = wrapper.attachShadow({ mode: "open" });
@@ -72,8 +70,50 @@ document.addEventListener("alpine:init", () => {
             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(this.map);
         L.marker([51.132882, 16.972938]).addTo(this.map);
-        this.getPositionOfVehicles("10");
+        //this.getPositionOfVehicles("10");
       }, 100);
+    },
+
+    getPositionOfVehicles(line) {
+      const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
+      const filters = JSON.stringify({ Nazwa_Linii: line });
+
+      const url = new URL("https://wroschedule.deno.dev/api");
+      url.searchParams.set("resource_id", resourceId);
+      url.searchParams.set("filters", filters);
+
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Results:", data.result.records);
+          data.result.records.forEach((res) => {
+            L.circleMarker(
+              [
+                res["Ostatnia_Pozycja_Szerokosc"],
+                res["Ostatnia_Pozycja_Dlugosc"],
+              ],
+              {
+                radius: 5,
+                color: "#ff0000", // stroke color
+                weight: 2, // stroke width
+                fillColor: "#ff0000", // fill color
+                fillOpacity: 0.6, // fill opacity (0 = transparent, 1 = opaque)
+              },
+            ).addTo(this.map);
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    },
+  }));
+
+  Alpine.data("stopsData", () => ({
+    stopsArray: [],
+    nextArrivals: {},
+    playDate: new Date(),
+    map: undefined,
+    init() {
       this.loadStops();
       const msUntilNextMinute =
         60000 - (new Date().getSeconds() * 1000 + new Date().getMilliseconds());
@@ -110,39 +150,6 @@ document.addEventListener("alpine:init", () => {
           ].sort((a, b) => a.timestamp - b.timestamp);
         });
       });
-    },
-
-    getPositionOfVehicles(line) {
-      const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
-      const filters = JSON.stringify({ Nazwa_Linii: line });
-
-      const url = new URL("https://wroschedule.deno.dev");
-      url.searchParams.set("resource_id", resourceId);
-      url.searchParams.set("filters", filters);
-
-      fetch(url)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Results:", data.result.records);
-          data.result.records.forEach((res) => {
-            L.circleMarker(
-              [
-                res["Ostatnia_Pozycja_Szerokosc"],
-                res["Ostatnia_Pozycja_Dlugosc"],
-              ],
-              {
-                radius: 15,
-                color: "#ff0000", // stroke color
-                weight: 2, // stroke width
-                fillColor: "#ff0000", // fill color
-                fillOpacity: 0.6, // fill opacity (0 = transparent, 1 = opaque)
-              },
-            ).addTo(this.map);
-          });
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
     },
 
     calculateMinutesDifference(date) {
@@ -227,13 +234,7 @@ document.addEventListener("alpine:init", () => {
       console.log("Loading stops for:", day);
 
       try {
-        //const response = await fetch(
-        //  "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/latest/download/out.json",
-        //);
-
-        const response = await fetch(
-          "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.2-zip/out.json.zip",
-        );
+        const response = await fetch("https://wroschedule.deno.dev/stopdata");
         const compressed = await response.arrayBuffer();
         const data = await unzip(compressed);
         //const data = await response.json();
