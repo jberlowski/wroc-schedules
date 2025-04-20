@@ -28,24 +28,156 @@ document.addEventListener("alpine:init", () => {
     },
   });
 
-  // Start the clock when Alpine loads
   Alpine.store("clock").init();
 
-  // Stops data component
+  Alpine.data("mapHandler", () => ({
+    map: undefined,
+    stopMarker: undefined,
+    markers: [],
+    mapContainer: undefined,
+    selectedLine: undefined,
+    selectedStop: undefined,
+    shadowRoot: undefined,
+
+    init() {
+      const wrapper = document.getElementById("map-wrapper");
+      this.shadowRoot = wrapper.attachShadow({ mode: "open" });
+
+      this.mapContainer = document.createElement("div");
+      this.mapContainer.id = "map";
+      this.mapContainer.style.height = "300px";
+      this.mapContainer.style.transition = "opacity 0.5s ease";
+      this.mapContainer.style.opacity = 0;
+
+      const leafletCSS = document.createElement("link");
+      leafletCSS.rel = "stylesheet";
+      leafletCSS.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      const leafletJS = document.createElement("script");
+      leafletJS.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      leafletJS.crossOrigin = "";
+      this.shadowRoot.appendChild(leafletCSS);
+      this.shadowRoot.appendChild(leafletJS);
+      this.shadowRoot.appendChild(this.mapContainer);
+
+      setTimeout(() => {
+        L.Icon.Default.mergeOptions({
+          iconUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+          iconRetinaUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+          shadowUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+        });
+        this.map = L.map(this.mapContainer);
+
+        // Add a tile layer (OpenStreetMap in this case)
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(this.map);
+        //this.getPositionOfVehicles("10");
+      }, 100);
+    },
+
+    selectStop(stopId) {
+      this.markers.forEach((it) => {
+        it.remove();
+      });
+      this.stopMarker?.remove();
+
+      this.markers = [];
+
+      const coords = this.getCoordsOfStop(stopId);
+      if (coords) {
+        this.selectedStop = stopId;
+        this.mapContainer.style.opacity = 1;
+        this.map.setView(coords, 15);
+        this.stopMarker = L.marker(coords).addTo(this.map);
+      } else {
+        this.mapContainer.style.opacity = 0;
+      }
+    },
+
+    getPositionOfVehicles(line) {
+      const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
+      const filters = JSON.stringify({ Nazwa_Linii: line });
+
+      const url = new URL("https://wroschedule-vqfxpgdr0k7f.deno.dev/api");
+      url.searchParams.set("resource_id", resourceId);
+      url.searchParams.set("filters", filters);
+
+      this.markers.forEach((it) => {
+        it.remove();
+      });
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          //console.log("Results:", data.result.records);
+          data.result.records.forEach((res) => {
+            const marker = L.circleMarker(
+              [
+                res["Ostatnia_Pozycja_Szerokosc"],
+                res["Ostatnia_Pozycja_Dlugosc"],
+              ],
+              {
+                radius: 3,
+                color: "#ff0000", // stroke color
+                weight: 2, // stroke width
+                fillColor: "#ff0000", // fill color
+                fillOpacity: 0.6, // fill opacity (0 = transparent, 1 = opaque)
+              },
+            ).addTo(this.map);
+            this.markers.push(marker);
+            this.scrollToBottom();
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
+    },
+
+    getCoordsOfStop(stopId) {
+      switch (stopId) {
+        case "10407":
+          return [51.116632, 17.000369];
+        case "12217":
+          return [51.128768, 16.989697];
+        case "12218":
+          return [51.129142, 16.988613];
+        case "12601":
+          return [51.133016, 16.972807];
+        case "12602":
+          return [51.132818, 16.972858];
+        case "12313":
+          return [51.128611, 16.989697];
+        case "12314":
+          return [51.127862, 16.990662];
+        case "12701":
+          return [51.133407, 16.97183];
+        case "12702":
+          return [51.132565, 16.972801];
+        case "12711":
+          return [51.132723, 16.973877];
+        case "12712":
+          return [51.133227, 16.974073];
+        default:
+          return undefined;
+      }
+    },
+    scrollToBottom() {
+      const bottom = this.shadowRoot.querySelector("#map");
+      if (bottom) {
+        bottom.scrollIntoView({ behavior: "smooth" });
+      }
+    },
+  }));
+
   Alpine.data("stopsData", () => ({
     stopsArray: [],
     nextArrivals: {},
     playDate: new Date(),
+    map: undefined,
     init() {
-      //51.132882, 16.972938
-      const map = L.map("map").setView([51.132882, 16.972938], 15);
-
-      // Add a tile layer (OpenStreetMap in this case)
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
-      this.getPositionOfVehicles("10");
       this.loadStops();
       const msUntilNextMinute =
         60000 - (new Date().getSeconds() * 1000 + new Date().getMilliseconds());
@@ -70,9 +202,9 @@ document.addEventListener("alpine:init", () => {
             2,
           ).map((arrival) => {
             return {
-              line: line.name + " " + line.destination,
+              lineAndDestination: line.name + " " + line.destination,
               timestamp: this.hourAndMinuteToDate(arrival),
-
+              line: line.name,
               hourAndMin: arrival,
             };
           });
@@ -82,26 +214,6 @@ document.addEventListener("alpine:init", () => {
           ].sort((a, b) => a.timestamp - b.timestamp);
         });
       });
-    },
-
-    getPositionOfVehicles(line) {
-      const resourceId = "a9b3841d-e977-474e-9e86-8789e470a85a_v1";
-      const filters = JSON.stringify({ Nazwa_Linii: line });
-
-      const url = new URL(
-        "https://corsproxy.io/?url=https://www.wroclaw.pl/open-data/api/3/action/datastore_search",
-      );
-      url.searchParams.set("resource_id", resourceId);
-      url.searchParams.set("filters", filters);
-
-      fetch(url)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Results:", data.result.records);
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
     },
 
     calculateMinutesDifference(date) {
@@ -151,7 +263,7 @@ document.addEventListener("alpine:init", () => {
     getLabelForStop(id) {
       switch (id) {
         case "10407":
-          return "🚊 -> Legnicka";
+          return "🚊 → Legnicka";
         case "12217":
           return "🚊 → Kozanów";
         case "12218":
@@ -183,15 +295,10 @@ document.addEventListener("alpine:init", () => {
 
     async loadStops() {
       const day = this.weekdayType;
-      console.log("Loading stops for:", day);
 
       try {
-        //const response = await fetch(
-        //  "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/latest/download/out.json",
-        //);
-
         const response = await fetch(
-          "https://corsproxy.io/?url=https://github.com/jberlowski/wroc-schedules/releases/download/v0.0.2-zip/out.json.zip",
+          "https://wroschedule-vqfxpgdr0k7f.deno.dev/stopdata",
         );
         const compressed = await response.arrayBuffer();
         const data = await unzip(compressed);
@@ -202,14 +309,14 @@ document.addEventListener("alpine:init", () => {
         this.stopsArray = Object.values(json.stops)
           .filter((stop) => {
             return [
-              //"12701",
+              "12701",
               "12702",
               "12217",
               "12218",
               "12313",
               "12314",
               "10407",
-              //"12601",
+              "12601",
               "12602",
               "12711",
               "12712",
