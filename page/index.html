@@ -13,6 +13,11 @@
       defer
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
+    <style>
+      .clickable-line {
+        cursor: pointer;
+      }
+    </style>
   </head>
 
   <body>
@@ -26,7 +31,10 @@
       <div x-data="stopsData">
         <template x-for="stop in stopsArray" :key="stop.id">
           <details name="exclusive-accordion">
-            <summary>
+            <summary
+              @click="$dispatch('stop-selected', { stopId: stop.id })"
+              class="clickable-line"
+            >
               <strong><span x-text="stop.name"></span></strong>
               <sub style="display: block; margin-top: 0.4em">
                 <span x-text="stop.label"></span
@@ -43,7 +51,12 @@
                    'list-style-type': 'none'
                   }"
                 >
-                  <strong> <span x-text="arrival.line"> </span></strong>
+                  <strong
+                    @click="$dispatch('line-selected', { line: arrival.line })"
+                    class="clickable-line"
+                  >
+                    <span x-text="arrival.lineAndDestination"> </span
+                  ></strong>
                   <span
                     style="float: right; margin-left: 1em"
                     x-text="arrival.hourAndMin"
@@ -59,7 +72,13 @@
           </details>
         </template>
       </div>
-      <div x-data="mapHandler" id="map-wrapper"></div>
+      <div
+        x-data="mapHandler"
+        id="map-wrapper"
+        :class="selectedStop ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+        @stop-selected.window="selectStop($event.detail.stopId)"
+        @line-selected.window="getPositionOfVehicles($event.detail.line)"
+      ></div>
     </main>
   </body>
 </html>
